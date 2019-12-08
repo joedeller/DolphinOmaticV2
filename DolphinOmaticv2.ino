@@ -5,6 +5,8 @@
  * So LED 1 and switch 1 are the reverse of the V1 arrangement
  * By using some borrowed assembler, the input value is flipped
  * from LSB to MSB format
+ * This version uses the HobbyComponents version of the TM1638 board, so 
+ * the library has been included.
  */
 
 
@@ -15,17 +17,21 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #define OLED_RESET 4
-Adafruit_SSD1306 display(OLED_RESET);
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 /* TM1638 Library */
 #include "HCTM1638.h"
+
 
 /* Set the digital pins used to interface to the module */
 #define STB 10 // Strobe pin
 #define CLK 9 // Clock pin
 #define DIO 8 // Data pin
 byte  buttonVal;
-byte oldVal;
+byte previousVal;
 byte fishWanted;
 /* Create an instance of the library */
 HCTM1638 HCTM1638(STB, DIO, CLK);
@@ -67,7 +73,7 @@ void showLCD(int value)
 
 void showLeds(byte value)
 {
-  Serial.print("LED val is ");
+  Serial.print(F("LED val is "));
   Serial.println(value);
   for(byte i = 0;i<8;i ++)
   {
@@ -93,20 +99,22 @@ void setup() {
     display.clearDisplay();     
     display.setTextColor(WHITE);
     display.setTextSize(1);
+    display.cp437(true);
     display.setCursor(0,0); 
-    display.print(F("DolphinOMatic V2.0!"));
+    display.print(F("DolphinOMatic V2.01!"));
     display.display();
     
   HCTM1638.Brightness(0x07);
-  byte index;
-  for (index = 0; index < 44; index++)
+  byte index;  
+  const char startMsg [] ="Dolphin o matic Ver 2.01 Joe Deller         ";
+  for (index = 0; index <strlen(startMsg); index++)
   {
     HCTM1638.Clear();    
-    HCTM1638.print7Seg("Dolphin o matic Ver 2.0 Joe Deller", index);
+    HCTM1638.print7Seg(startMsg, index);
     delay(130); 
   }
   
-  HCTM1638.print7Seg("FISH", 8);
+  HCTM1638.print7Seg(F("FISH"), 8);
   showLCD(0);
   delay (1500);
 
@@ -131,12 +139,12 @@ void loop() {
  {
   buttonVal = bitswap(buttonVal);
   // XOR as we are using push buttons, if bit was set last time turn it off and vice versa
-  buttonVal = (buttonVal ^ oldVal); 
+  buttonVal = (buttonVal ^ previousVal); 
   showCurrentFish(buttonVal);  
   showLeds(buttonVal);
   showDisplay (buttonVal);
   showLCD(buttonVal);
-  oldVal = buttonVal;
+  previousVal = buttonVal;
   delay(100);
  }
 }
